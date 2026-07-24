@@ -14,16 +14,20 @@ from ultralytics import YOLO
 #      para "model.pt", na raiz desta pasta
 # ---------------------------------------------------------------------------
 
-# insira seu código aqui
+# 1. Carrega o modelo YOLO11n já pré-treinado.
+model = YOLO("yolo11n.pt")
 
-# Dica de estrutura (não é obrigatório seguir exatamente assim):
-#
-# model = YOLO("yolo11n.pt")
-# results = model.train(
-#     data="dataset/data.yaml",
-#     epochs=...,
-#     imgsz=...,
-#     batch=...,
-#     device="cpu",
-# )
-# shutil.copy(results.save_dir / "weights" / "best.pt", "model.pt")
+# 2. Fine-tuning no dataset de máscaras, rodando em CPU.
+results = model.train(
+    data="dataset/data.yaml",
+    epochs=25,
+    imgsz=640,
+    batch=8,
+    device="cpu",
+)
+
+# 3. Copia o melhor checkpoint gerado durante o treino para model.pt, na raiz da pasta
+best_weights = results.save_dir / "weights" / "best.pt"
+shutil.copy(best_weights, "model.pt")
+
+print(f"\n✅ Treinamento concluído. Pesos salvos em: model.pt (copiado de {best_weights})")

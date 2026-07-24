@@ -130,41 +130,70 @@ projetos/3-deteccao-mascaras/
 
 ## 📝 Relatório do Candidato
 
-👤 **Nome Completo:**
+👤 **Nome Completo:** João Pedro de Oliveira Dias
 
 ### 1️⃣ Resumo da Abordagem
 
-Descreva os hiperparâmetros de fine-tuning utilizados (épocas, tamanho de
-imagem, batch size) e quaisquer ajustes feitos para lidar com o desbalanceamento
-de classes, se houver.
+O modelo YOLO11n foi fine-tunado por 25 épocas no dataset `dataset/data.yaml`, com imagens redimensionadas para 640x640 e batch size de 8 (valor baixo escolhido por conta do treino em CPU). O treino foi feito em `device="cpu"`, conforme exigido.
+
+Não foi aplicada nenhuma técnica específica de balanceamento de classes, o modelo foi treinado diretamente sobre a distribuição original do dataset. O efeito desse desbalanceamento ficou visível tanto nas métricas de treino (evolução mais lenta/instável) quanto na inferência final.
 
 ### 2️⃣ Bibliotecas Utilizadas
 
-Liste as principais bibliotecas utilizadas, preferencialmente com suas versões.
+- `ultralytics` versão 8.4.104 (framework YOLO, treino, exportação e inferência)
+- `torch` versão 2.13.0 / `torchvision` versão 0.28.0 (backend de deep learning)
+dependências de exportação instaladas automaticamente pela Ultralytics no primeiro `optimize_model.py` (onnx, tensorflow, ai-edge-litert)
 
 ### 3️⃣ Técnica de Otimização do Modelo
 
-Explique o processo de exportação para TFLite realizado em `optimize_model.py`.
+Em `optimize_model.py`, o modelo treinado (`model.pt`) foi carregado e exportado para o formato TFLite através de `model.export(format="tflite", imgsz=640)`. Internamente, a Ultralytics converte o modelo em uma cadeia de formatos (PyTorch → ONNX → TensorFlow → TFLite) de forma automática, instalando as dependências necessárias na primeira execução. O resultado é o arquivo `model.tflite`, otimizado para inferência em dispositivos de borda (edge), aceitando uma imagem por vez (batch=1).
 
 ### 4️⃣ Resultados Obtidos
 
-Informe o mAP50 (e, se possível, o mAP50-95) obtido na validação, por classe se
-possível, e o tamanho dos arquivos `model.pt` e `model.tflite`.
+Na validação, o modelo atingiu:
+mAP50 (época final, 25): 0.7663
+mAP50-95 (época final, 25): 0.5308
+Melhor mAP50 durante o treino: 0.7795 (época 22), com mAP50-95 de 0.5386
+
+Métricas por classe:
+---
+Classe  	             mAP50   	mAP50-95
+with_mask	             0.9668	  0.6761
+without_mask	         0.8028	  0.5253
+mask_weared_incorrect	 0.5694	  0.4143
+---
+Média (all)	          0.7796	0.5386
+---
+O breakdown por classe confirma o padrão esperado pelo desbalanceamento do dataset: with_mask (classe majoritária) atinge desempenho excelente, without_mask vem em seguida, e mask_weared_incorrect (classe minoritária) fica com o resultado mais baixo. Ainda assim, um valor de 0.5694 é razoável para uma classe com poucos exemplos de treino, mostrando que o modelo conseguiu aprender um padrão real, mesmo que menos robusto que nas outras classes.
+---
+Tamanho dos arquivos:
+`model.pt`: 5.3 MB
+`model.tflite`: 11 MB
+---
 
 ### 5️⃣ Comentários Adicionais (Opcional)
 
-Dificuldades encontradas, decisões técnicas importantes, limitações do modelo
-(ex: desempenho na classe minoritária), aprendizados durante o desafio.
+O maior desafio do projeto não foi o modelo em si, mas o ambiente de execução. Foram necessários ajustes de Dev Container/Docker, incluindo resolver um erro de arquitetura na exportação TFLite e realinhar as versões de torch/torchvision que ficaram incompatíveis após a instalação das dependências de exportação. De modo geral, as maiores dficuldades não foram fazer o que o projeto pede, mas sim tentar corrigir os erros que aparecem antes de começar o projeto e na hora de testa-lo.
 
 ### 6️⃣ Exemplo de Inferência
 
-Cole a saída do terminal ao rodar `run_inference.py` (número de detecções por
-imagem), e comente brevemente sobre o que observou ao abrir as imagens
-anotadas em `runs/detect/inferencia_exemplos/predicoes/` — por exemplo, se as
-caixas ficaram bem localizadas, se houve confusão entre classes, ou se a
-classe minoritária (`mask_weared_incorrect`) teve desempenho visivelmente pior.
+============================================================
+Projeto 3 — Inferência com model.tflite (Edge AI)
+============================================================
 
+Rodando inferência em 5 amostras usando model.tflite:
+
+Imagem                               Detecções  Detalhes
+----------------------------------------------------------------------
+maksssksksss105.jpg                          9  [9x with_mask]
+maksssksksss107.jpg                          1  [1x with_mask]
+maksssksksss11.jpg                          25  [24x with_mask, 1x mask_weared_incorrect]
+maksssksksss113.jpg                          4  [3x with_mask, 1x without_mask]
+maksssksksss12.jpg                          16  [13x with_mask, 3x without_mask]
+----------------------------------------------------------------------
+TOTAL                                       55
 ---
+Ao abrir as imagens anotadas em `runs/detect/inferencia_exemplos/predicoes/`, observa-se que o modelo detecta com boa consistência a classe majoritária (with_mask), inclusive em imagens com múltiplos rostos pequenos (25 detecções na maksssksksss11.jpg). A classe without_mask também aparece de forma coerente. Já a classe mask_weared_incorrect praticamente não é detectada, apenas 1 ocorrência em todas as 5 imagens. Além disso, juntamente com as caixas há também as classes, o que, em alguns casos, dificutou a visualização de outras caixas.
 
 ## 📄 Créditos do Dataset
 

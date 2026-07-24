@@ -9,9 +9,10 @@ from ultralytics import YOLO
 #      (a Ultralytics gera automaticamente "model.tflite" na mesma pasta)
 # ---------------------------------------------------------------------------
 
-# insira seu código aqui
+# 1. Carrega o modelo já treinado.
+model = YOLO("model.pt")
 
-# Dica de estrutura (não é obrigatório seguir exatamente assim):
-#
-# model = YOLO("model.pt")
-# model.export(format="tflite", imgsz=...)
+# 2. Exporta para TFLite.
+export_path = model.export(format="tflite", imgsz=640)
+
+print(f"\n✅ Modelo exportado com sucesso para: {export_path}")
